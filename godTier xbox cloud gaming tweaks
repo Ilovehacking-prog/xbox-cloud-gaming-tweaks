@@ -1,0 +1,291 @@
+(function () {
+  if (window.godTierLoaded) return;
+  window.godTierLoaded = true;
+
+  console.log("😈 GOD TIER LOADED");
+
+  // ===== MENU =====
+  const menu = document.createElement("div");
+  menu.style = `
+    position:fixed;
+    top:20px;
+    right:20px;
+    width:370px;
+    background:rgba(0,0,0,0.95);
+    color:#00ffee;
+    font-family:monospace;
+    padding:15px;
+    border-radius:12px;
+    z-index:999999;
+    box-shadow:0 0 35px #00ffee;
+  `;
+
+  menu.innerHTML = `
+    <h3>😈 GOD TIER</h3>
+
+    <b>🎯 CROSSHAIR</b><br>
+    <label><input type="checkbox" id="crossEnable"> ENABLE</label><br>
+    <label><input type="checkbox" id="dynamicCross"> DYNAMIC</label><br>
+    Preset:
+    <select id="crossPreset">
+      <option value="dot">DOT</option>
+      <option value="plus">PLUS</option>
+      <option value="smallplus">SMALL PLUS</option>
+      <option value="circle">CIRCLE</option>
+      <option value="pro">PRO</option>
+    </select><br>
+    Color <input type="color" id="crossColor" value="#ffffff"><br>
+
+    <br><b>⚡ PERFORMANCE</b><br>
+    <label><input type="checkbox" id="fpsBoost"> FPS BOOST</label><br>
+    <label><input type="checkbox" id="antiLag"> ANTI-LAG</label><br>
+    <label><input type="checkbox" id="aiBoost"> AI BOOST</label><br>
+
+    <br><b>🎮 CONTROLLER</b><br>
+    <label><input type="checkbox" id="inputBoost"> INPUT BOOST</label><br>
+    Deadzone <input type="range" id="deadzone" min="0" max="20" value="8"><br>
+
+    <br><b>💥 EFFECTS</b><br>
+    <label><input type="checkbox" id="hitmarker"> HITMARKER</label><br>
+
+    <br><b>📊 MONITOR</b><br>
+    <label><input type="checkbox" id="fpsGraph"> FPS GRAPH</label><br>
+
+    <br><b>🧠 TRAINING</b><br>
+    <label><input type="checkbox" id="aimTrainer"> AIM TRAINER</label><br>
+    <label><input type="checkbox" id="reactionTrainer"> REACTION TRAINER</label><br>
+
+    <br><b>👁️ VISUAL</b><br>
+    <label><input type="checkbox" id="clarity"> CLARITY+</label><br>
+    <label><input type="checkbox" id="focusMode"> FOCUS MODE</label><br>
+
+    <br><button id="close">❌ CLOSE</button>
+  `;
+
+  document.body.appendChild(menu);
+
+  // ===== DRAG =====
+  menu.onmousedown = e => {
+    let x = e.clientX - menu.offsetLeft;
+    let y = e.clientY - menu.offsetTop;
+    document.onmousemove = e => {
+      menu.style.left = e.clientX - x + "px";
+      menu.style.top = e.clientY - y + "px";
+    };
+    document.onmouseup = () => document.onmousemove = null;
+  };
+
+  // ===== CROSSHAIR =====
+  let ch, size = 1;
+
+  function createCrosshair(type, color) {
+    if (ch) ch.remove();
+
+    ch = document.createElement("div");
+    ch.style = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      width:0;
+      height:0;
+      pointer-events:none;
+      z-index:999999;
+      transform:translate(-50%,-50%) scale(${size});
+    `;
+
+    function line(x, y, w, h) {
+      const l = document.createElement("div");
+      l.style = `
+        position:absolute;
+        left:${x}px;
+        top:${y}px;
+        width:${w}px;
+        height:${h}px;
+        background:${color};
+      `;
+      ch.appendChild(l);
+    }
+
+    if (type === "dot") {
+      line(-3, -3, 6, 6);
+      ch.firstChild.style.borderRadius = "50%";
+    }
+
+    if (type === "plus") {
+      line(-1, -8, 2, 16);
+      line(-8, -1, 16, 2);
+    }
+
+    if (type === "smallplus") {
+      line(-1, -5, 2, 10);
+      line(-5, -1, 10, 2);
+    }
+
+    if (type === "circle") {
+      const c = document.createElement("div");
+      c.style = `
+        position:absolute;
+        left:-7px;
+        top:-7px;
+        width:14px;
+        height:14px;
+        border:2px solid ${color};
+        border-radius:50%;
+      `;
+      ch.appendChild(c);
+    }
+
+    if (type === "pro") {
+      const gap = 4;
+      line(-1, -gap - 8, 2, 8);
+      line(-1, gap, 2, 8);
+      line(-gap - 8, -1, 8, 2);
+      line(gap, -1, 8, 2);
+    }
+
+    document.body.appendChild(ch);
+  }
+
+  function updateCrosshair() {
+    if (!crossEnable.checked) {
+      if (ch) ch.remove();
+      return;
+    }
+    createCrosshair(crossPreset.value, crossColor.value);
+  }
+
+  crossEnable.onchange = updateCrosshair;
+  crossPreset.onchange = updateCrosshair;
+  crossColor.oninput = updateCrosshair;
+
+  // ===== DYNAMIC =====
+  setInterval(() => {
+    if (!dynamicCross.checked || !ch) return;
+    const gp = navigator.getGamepads()[0];
+    let m = gp ? Math.abs(gp.axes[0]) + Math.abs(gp.axes[1]) : 0;
+    size = 1 + m * 0.5;
+    ch.style.transform = `translate(-50%,-50%) scale(${size})`;
+  }, 16);
+
+  // ===== HITMARKER =====
+  window.addEventListener("click", () => {
+    if (!hitmarker.checked) return;
+    const hm = document.createElement("div");
+    hm.style = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      width:20px;
+      height:20px;
+      border:2px solid white;
+      transform:translate(-50%,-50%) rotate(45deg);
+      z-index:999999;
+      opacity:1;
+      transition:opacity 0.2s;
+    `;
+    document.body.appendChild(hm);
+    setTimeout(()=>hm.style.opacity=0,50);
+    setTimeout(()=>hm.remove(),200);
+  });
+
+  // ===== REAL FPS TRACK =====
+  let last = performance.now(), fps = 60;
+
+  function trackFPS(now){
+    fps = 1000/(now-last);
+    last = now;
+    requestAnimationFrame(trackFPS);
+  }
+  requestAnimationFrame(trackFPS);
+
+  // ===== AI BOOST =====
+  setInterval(()=>{
+    if(!aiBoost.checked) return;
+    if(fps < 40){
+      document.body.style.filter="brightness(1.05)";
+    } else {
+      document.body.style.filter="none";
+    }
+  },500);
+
+  // ===== AIM TRAINER =====
+  let target;
+  aimTrainer.onchange = () => {
+    if (!aimTrainer.checked) {
+      if (target) target.remove();
+      return;
+    }
+
+    target = document.createElement("div");
+    target.style = `
+      position:fixed;
+      width:20px;
+      height:20px;
+      background:red;
+      border-radius:50%;
+      z-index:999999;
+    `;
+    document.body.appendChild(target);
+
+    setInterval(() => {
+      if (!aimTrainer.checked) return;
+      target.style.left = Math.random()*window.innerWidth+"px";
+      target.style.top = Math.random()*window.innerHeight+"px";
+    }, 800);
+  };
+
+  // ===== REACTION TRAINER =====
+  reactionTrainer.onchange = () => {
+    if (!reactionTrainer.checked) return;
+
+    setInterval(() => {
+      if (!reactionTrainer.checked) return;
+      document.body.style.background = "red";
+      let start = performance.now();
+
+      window.onclick = () => {
+        let time = performance.now() - start;
+        alert("Reaction: " + Math.round(time) + "ms");
+        document.body.style.background = "";
+      };
+    }, 4000);
+  };
+
+  // ===== CONTROLLER =====
+  let dz = 0.08;
+  deadzone.oninput = () => dz = deadzone.value/100;
+
+  setInterval(()=>{
+    const gp = navigator.getGamepads()[0];
+    if(!gp) return;
+    gp.axes.forEach((v,i)=>{
+      if(Math.abs(v)<dz) gp.axes[i]=0;
+    });
+  },10);
+
+  inputBoost.onchange = ()=>{
+    window.requestAnimationFrame = cb => setTimeout(cb,1000/60);
+  };
+
+  // ===== VISUAL =====
+  clarity.onchange = ()=>{
+    const s=document.createElement("style");
+    s.innerHTML="video{filter:contrast(1.3) brightness(1.1) saturate(1.2)}";
+    document.head.appendChild(s);
+  };
+
+  focusMode.onchange = ()=>{
+    const s=document.createElement("style");
+    s.innerHTML="*{outline:none!important;cursor:none!important}";
+    document.head.appendChild(s);
+  };
+
+  // ===== ANTI THROTTLE =====
+  Object.defineProperty(document,"hidden",{value:false});
+  Object.defineProperty(document,"visibilityState",{value:"visible"});
+
+  setInterval(()=>window.dispatchEvent(new Event("mousemove")),60);
+
+  close.onclick = ()=>menu.remove();
+
+})();
