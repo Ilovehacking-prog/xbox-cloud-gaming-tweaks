@@ -1,0 +1,173 @@
+(function () {
+  if (window.beyondGodLoaded) return;
+  window.beyondGodLoaded = true;
+
+  console.log("👑 BEYOND GOD ACTIVE");
+
+  // ===== MENU =====
+  const menu = document.createElement("div");
+  menu.style = `
+    position:fixed;
+    top:20px;
+    right:20px;
+    width:380px;
+    background:black;
+    color:#00ffee;
+    font-family:monospace;
+    padding:15px;
+    border-radius:12px;
+    z-index:999999;
+  `;
+
+  menu.innerHTML = `
+    <h3>👑 BEYOND GOD</h3>
+
+    🎯 <input type="checkbox" id="crossEnable"> Crosshair<br>
+    🧠 <input type="checkbox" id="ai"> AI Boost<br>
+    🎮 <input type="checkbox" id="stabilizer"> Aim Stabilizer<br>
+    ⚡ <input type="checkbox" id="input"> Input Boost<br>
+    💥 <input type="checkbox" id="hit"> Hitmarker<br>
+    📊 <input type="checkbox" id="stats"> Stats<br>
+    🎯 <input type="checkbox" id="trainer"> Aim Trainer<br>
+
+    <br>Color <input type="color" id="color" value="#ffffff">
+
+    <br><br><button id="close">CLOSE</button>
+  `;
+
+  document.body.appendChild(menu);
+
+  // ===== CROSSHAIR =====
+  let ch, size = 1;
+
+  function drawCrosshair(color) {
+    if (ch) ch.remove();
+
+    ch = document.createElement("div");
+    ch.style = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%) scale(${size});
+      pointer-events:none;
+      z-index:999999;
+    `;
+
+    function line(x,y,w,h){
+      let l=document.createElement("div");
+      l.style=`position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;background:${color}`;
+      ch.appendChild(l);
+    }
+
+    line(-1,-6,2,12);
+    line(-6,-1,12,2);
+
+    document.body.appendChild(ch);
+  }
+
+  // ===== FPS TRACK =====
+  let last=performance.now(),fps=60;
+
+  function loop(now){
+    fps=1000/(now-last);
+    last=now;
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // ===== AI BOOST =====
+  setInterval(()=>{
+    if(!ai.checked) return;
+    if(fps<40){
+      document.body.style.filter="brightness(1.05)";
+    } else {
+      document.body.style.filter="";
+    }
+  },500);
+
+  // ===== INPUT BOOST =====
+  input.onchange = ()=>{
+    window.requestAnimationFrame = cb => setTimeout(cb,1000/60);
+  };
+
+  // ===== STABILIZER =====
+  setInterval(()=>{
+    if(!stabilizer.checked) return;
+    const gp=navigator.getGamepads()[0];
+    if(!gp) return;
+    gp.axes.forEach((v,i)=>{
+      if(Math.abs(v)<0.1) gp.axes[i]=0;
+    });
+  },10);
+
+  // ===== HITMARKER =====
+  window.addEventListener("click",()=>{
+    if(!hit.checked) return;
+    let h=document.createElement("div");
+    h.style=`position:fixed;top:50%;left:50%;width:15px;height:15px;border:2px solid white;transform:translate(-50%,-50%) rotate(45deg)`;
+    document.body.appendChild(h);
+    setTimeout(()=>h.remove(),150);
+  });
+
+  // ===== AIM TRAINER =====
+  let target,hits=0,shots=0;
+
+  trainer.onchange=()=>{
+    if(!trainer.checked){
+      if(target) target.remove();
+      return;
+    }
+
+    target=document.createElement("div");
+    target.style=`position:fixed;width:20px;height:20px;background:red;border-radius:50%;z-index:999999`;
+    document.body.appendChild(target);
+
+    setInterval(()=>{
+      if(!trainer.checked) return;
+      target.style.left=Math.random()*window.innerWidth+"px";
+      target.style.top=Math.random()*window.innerHeight+"px";
+    },700);
+  };
+
+  window.addEventListener("click",e=>{
+    if(!trainer.checked || !target) return;
+    shots++;
+    let rect=target.getBoundingClientRect();
+    if(e.clientX>rect.left && e.clientX<rect.right && e.clientY>rect.top && e.clientY<rect.bottom){
+      hits++;
+    }
+  });
+
+  // ===== STATS =====
+  let statBox;
+  stats.onchange=()=>{
+    if(!stats.checked){
+      if(statBox) statBox.remove();
+      return;
+    }
+
+    statBox=document.createElement("div");
+    statBox.style=`position:fixed;bottom:10px;right:10px;color:#0f0;font-size:12px`;
+    document.body.appendChild(statBox);
+
+    setInterval(()=>{
+      if(!stats.checked) return;
+      let acc = shots ? Math.round((hits/shots)*100) : 0;
+      statBox.innerText = `FPS:${Math.round(fps)} | ACC:${acc}%`;
+    },300);
+  };
+
+  // ===== CROSSHAIR LOOP =====
+  setInterval(()=>{
+    if(!crossEnable.checked) return;
+
+    const gp=navigator.getGamepads()[0];
+    let move=gp ? Math.abs(gp.axes[0])+Math.abs(gp.axes[1]) : 0;
+
+    size = 1 + move*0.4;
+    drawCrosshair(color.value);
+  },16);
+
+  close.onclick=()=>menu.remove();
+
+})();
