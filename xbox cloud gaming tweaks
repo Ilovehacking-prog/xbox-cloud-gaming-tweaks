@@ -1,0 +1,284 @@
+(function () {
+  if (window.nextFinalLoaded) return;
+  window.nextFinalLoaded = true;
+
+  console.log("😈 NEXT FINAL FORM LOADED");
+
+  // ===== MENU =====
+  const menu = document.createElement("div");
+  menu.style = `
+    position:fixed;
+    top:20px;
+    right:20px;
+    width:360px;
+    background:rgba(0,0,0,0.95);
+    color:#00ffee;
+    font-family:monospace;
+    padding:15px;
+    border-radius:12px;
+    z-index:999999;
+    box-shadow:0 0 30px #00ffee;
+  `;
+
+  menu.innerHTML = `
+    <h3>😈 NEXT FINAL</h3>
+
+    <b>🎯 CROSSHAIR</b><br>
+    <label><input type="checkbox" id="crossEnable"> ENABLE</label><br>
+    <label><input type="checkbox" id="dynamicCross"> DYNAMIC</label><br>
+    Preset:
+    <select id="crossPreset">
+      <option value="dot">DOT</option>
+      <option value="plus">PLUS</option>
+      <option value="smallplus">SMALL PLUS</option>
+      <option value="circle">CIRCLE</option>
+      <option value="pro">PRO</option>
+    </select><br>
+    Color <input type="color" id="crossColor" value="#ffffff"><br>
+
+    <br><b>⚡ PERFORMANCE</b><br>
+    <label><input type="checkbox" id="fpsBoost"> FPS BOOST</label><br>
+    <label><input type="checkbox" id="antiLag"> ANTI-LAG</label><br>
+    <label><input type="checkbox" id="aiBoost"> AI BOOST</label><br>
+
+    <br><b>🎮 CONTROLLER</b><br>
+    <label><input type="checkbox" id="inputBoost"> INPUT BOOST</label><br>
+    Deadzone <input type="range" id="deadzone" min="0" max="20" value="8"><br>
+
+    <br><b>💥 EFFECTS</b><br>
+    <label><input type="checkbox" id="hitmarker"> HITMARKER</label><br>
+
+    <br><b>📊 MONITOR</b><br>
+    <label><input type="checkbox" id="fpsGraph"> FPS GRAPH</label><br>
+
+    <br><b>👁️ VISUAL</b><br>
+    <label><input type="checkbox" id="clarity"> CLARITY+</label><br>
+
+    <br><button id="close">❌ CLOSE</button>
+  `;
+
+  document.body.appendChild(menu);
+
+  // ===== DRAG =====
+  menu.onmousedown = e => {
+    let x = e.clientX - menu.offsetLeft;
+    let y = e.clientY - menu.offsetTop;
+    document.onmousemove = e => {
+      menu.style.left = e.clientX - x + "px";
+      menu.style.top = e.clientY - y + "px";
+    };
+    document.onmouseup = () => document.onmousemove = null;
+  };
+
+  // ===== CROSSHAIR =====
+  let ch, size = 1;
+
+  function createCrosshair(type, color) {
+    if (ch) ch.remove();
+
+    ch = document.createElement("div");
+    ch.style = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      width:0;
+      height:0;
+      pointer-events:none;
+      z-index:999999;
+      transform:translate(-50%,-50%) scale(${size});
+    `;
+
+    function line(x, y, w, h) {
+      const l = document.createElement("div");
+      l.style = `
+        position:absolute;
+        left:${x}px;
+        top:${y}px;
+        width:${w}px;
+        height:${h}px;
+        background:${color};
+      `;
+      ch.appendChild(l);
+    }
+
+    if (type === "dot") {
+      line(-3, -3, 6, 6);
+      ch.firstChild.style.borderRadius = "50%";
+    }
+
+    if (type === "plus") {
+      line(-1, -8, 2, 16);
+      line(-8, -1, 16, 2);
+    }
+
+    if (type === "smallplus") {
+      line(-1, -5, 2, 10);
+      line(-5, -1, 10, 2);
+    }
+
+    if (type === "circle") {
+      const c = document.createElement("div");
+      c.style = `
+        position:absolute;
+        left:-7px;
+        top:-7px;
+        width:14px;
+        height:14px;
+        border:2px solid ${color};
+        border-radius:50%;
+      `;
+      ch.appendChild(c);
+    }
+
+    if (type === "pro") {
+      const gap = 4;
+      line(-1, -gap - 8, 2, 8);
+      line(-1, gap, 2, 8);
+      line(-gap - 8, -1, 8, 2);
+      line(gap, -1, 8, 2);
+    }
+
+    document.body.appendChild(ch);
+  }
+
+  function updateCrosshair() {
+    if (!crossEnable.checked) {
+      if (ch) ch.remove();
+      return;
+    }
+    createCrosshair(crossPreset.value, crossColor.value);
+  }
+
+  crossEnable.onchange = updateCrosshair;
+  crossPreset.onchange = updateCrosshair;
+  crossColor.oninput = updateCrosshair;
+
+  // ===== DYNAMIC CROSSHAIR =====
+  setInterval(() => {
+    if (!dynamicCross.checked || !ch) return;
+
+    const gp = navigator.getGamepads()[0];
+    let movement = 0;
+
+    if (gp) {
+      movement = Math.abs(gp.axes[0]) + Math.abs(gp.axes[1]);
+    }
+
+    size = 1 + movement * 0.5;
+    ch.style.transform = `translate(-50%,-50%) scale(${size})`;
+  }, 16);
+
+  // ===== HITMARKER =====
+  window.addEventListener("click", () => {
+    if (!hitmarker.checked) return;
+
+    const hm = document.createElement("div");
+    hm.style = `
+      position:fixed;
+      top:50%;
+      left:50%;
+      width:20px;
+      height:20px;
+      border:2px solid white;
+      transform:translate(-50%,-50%) rotate(45deg);
+      z-index:999999;
+      opacity:1;
+      transition:opacity 0.2s;
+    `;
+    document.body.appendChild(hm);
+    setTimeout(() => hm.style.opacity = 0, 50);
+    setTimeout(() => hm.remove(), 200);
+  });
+
+  // ===== AI BOOST =====
+  setInterval(() => {
+    if (!aiBoost.checked) return;
+
+    const fps = performance.now() % 60;
+
+    if (fps < 30) {
+      document.body.style.filter = "brightness(1.05)";
+    } else {
+      document.body.style.filter = "none";
+    }
+  }, 1000);
+
+  // ===== PERFORMANCE =====
+  fpsBoost.onchange = () => {
+    document.body.style.willChange = "transform";
+  };
+
+  antiLag.onchange = () => {
+    const s = document.createElement("style");
+    s.innerHTML = "*{animation:none!important;transition:none!important}";
+    document.head.appendChild(s);
+  };
+
+  // ===== CONTROLLER =====
+  let dz = 0.08;
+  deadzone.oninput = () => dz = deadzone.value / 100;
+
+  setInterval(() => {
+    const gp = navigator.getGamepads()[0];
+    if (!gp) return;
+    gp.axes.forEach((v, i) => {
+      if (Math.abs(v) < dz) gp.axes[i] = 0;
+    });
+  }, 10);
+
+  inputBoost.onchange = () => {
+    window.requestAnimationFrame = cb => setTimeout(cb, 1000 / 60);
+  };
+
+  // ===== FPS GRAPH =====
+  let graph;
+
+  fpsGraph.onchange = function () {
+    if (this.checked) {
+      graph = document.createElement("canvas");
+      graph.width = 200;
+      graph.height = 60;
+      graph.style = "position:fixed;bottom:10px;left:10px;z-index:999999";
+      document.body.appendChild(graph);
+
+      const ctx = graph.getContext("2d");
+      let data = [];
+
+      function loop(time) {
+        let fps = Math.round(1000 / (time - (loop.last || time)));
+        loop.last = time;
+
+        data.push(fps);
+        if (data.length > 50) data.shift();
+
+        ctx.clearRect(0,0,200,60);
+        ctx.beginPath();
+        data.forEach((v,i)=>ctx.lineTo(i*4,60-v/2));
+        ctx.strokeStyle="#0f0";
+        ctx.stroke();
+
+        requestAnimationFrame(loop);
+      }
+
+      requestAnimationFrame(loop);
+    } else if (graph) graph.remove();
+  };
+
+  // ===== VISUAL =====
+  clarity.onchange = () => {
+    const s = document.createElement("style");
+    s.innerHTML = "video{filter:contrast(1.25) brightness(1.08) saturate(1.15)}";
+    document.head.appendChild(s);
+  };
+
+  // ===== ANTI THROTTLE =====
+  Object.defineProperty(document, "hidden", { value: false });
+  Object.defineProperty(document, "visibilityState", { value: "visible" });
+
+  setInterval(() => {
+    window.dispatchEvent(new Event("mousemove"));
+  }, 60);
+
+  close.onclick = () => menu.remove();
+
+})();
